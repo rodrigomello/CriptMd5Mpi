@@ -23,7 +23,7 @@ void incrementa_senha(char *senha);
 void testa_senha(const char *hash_alvo, const char *senha);
 
 int main(int argc, char *argv[]) {
-  int i;
+  int i, inicio, fim;
   char senha[TAM_SENHA + 1];
   char **buffer, **buffer_local;
   int my_rank, comm_sz;
@@ -33,11 +33,11 @@ int main(int argc, char *argv[]) {
     printf("Uso: %s <hash>", argv[0]);
     return 1;
   }
+
   MPI_Init(NULL,NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-  if(my_rank == 0){
     //aloca a quantidade de possibilidades no buffer
     buffer = (char **) calloc( TAM_POSSIBILIDADES, sizeof(char *));
     
@@ -58,53 +58,39 @@ int main(int argc, char *argv[]) {
       strcpy(buffer[i], senha);
     }
     /*
-    for (i = 0; i < TAM_POSSIBILIDADES; i++){
-      if(i%1000 == 0){
-        printf("BUffer[%d]: %s\n",i ,buffer[i] );
-      }
-    }
     */
     printf("Primeiro: %s\n", buffer[0]);
     printf("Ultimo: %s\n",buffer[TAM_POSSIBILIDADES-1]);
 
-  }
+    
   
-  n_local = TAM_POSSIBILIDADES/comm_sz; 
-  if (TAM_POSSIBILIDADES % comm_sz){
-    n_local += comm_sz;
-  }
-  buffer_local = (char **) calloc(n_local, sizeof(char *));
-  for (i = 0; i < n_local; i++){
-      buffer_local[i] = (char *) calloc(TAM_SENHA + 1, sizeof(char));
-      //strcpy(buffer[i], senha);
-  }  
-  
-  MPI_Scatter(buffer, n_local, MPI_BYTE, buffer_local, n_local, MPI_BYTE, 0, comm);
+  //MPI_Scatter(buffer, n_local, MPI_BYTE, buffer_local, n_local, MPI_BYTE, 0, comm);
   //MPI_Bcast(buffer, TAM_POSSIBILIDADES + (TAM_POSSIBILIDADES % comm_sz), MPI_BYTE, 0, comm );
-  //printf("N_local: %d\n",n_local );
-  printf("Buffer[%d]: %d\n",n_local ,buffer_local[n_local-1] );
-  
-  MPI_Barrier(comm);
+
+  n_local = TAM_POSSIBILIDADES / comm_sz; 
+
+  inicio = my_rank * n_local;
+  fim = inicio + n_local;
 /*
-  if(my_rank == 0){
-  for (i = 0; i < n_local; i++){
-      if(i%1000 == 0){
-        printf("Buffer[%d]: %s\n",i ,buffer_local[i] );
-      }
+    for (i = 0; i < n_local; i++){
+      //if(i%1000 == 0){
+        printf("Processo: %d, Buffer[%d]: %s\n",my_rank, i ,buffer[i] );
+      //}
     }
-  }
+*/
+  MPI_Barrier(comm);
  
-  strcpy(senha, buffer_local[0]);
-  i = 0;
-  while (i < n_local) {
+  strcpy(senha, buffer[0]);
+  i = inicio;
+  while (i < fim) {
     testa_senha(argv[1], senha);
     i++;
     if(i%10000 == 0){
-      printf("processo: %d, test: %s, i: %d\n",my_rank, buffer_local[i], i);
+      printf("processo: %d, test: %s, i: %d\n",my_rank, buffer[i], i);
     }
-    strcpy(senha, buffer_local[i]);
+    strcpy(senha, buffer[i]);
   }
-*/
+
 
   return 0;
 }
