@@ -12,7 +12,7 @@ Rodar:  mpiexec -n <numero de processos> ./mpi.app <hash md5>
 
 
 #define TAM_HASH 256
-#define TAM_SENHA 4
+#define TAM_SENHA 5
 #define TAM_POSSIBILIDADES (int)pow(26, TAM_SENHA)
 
 /* Obtém o hash a partir de uma senha e coloca o resultado em hash.
@@ -25,7 +25,7 @@ void testa_senha(const char *hash_alvo, const char *senha);
 int main(int argc, char *argv[]) {
   int i, inicio, fim;
   char senha[TAM_SENHA + 1];
-  char **buffer, **buffer_local;
+  char **buffer;
   int my_rank, comm_sz;
   int n_local;
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -57,41 +57,23 @@ int main(int argc, char *argv[]) {
       incrementa_senha(senha);
       strcpy(buffer[i], senha);
     }
-    /*
-    */
-    printf("Primeiro: %s\n", buffer[0]);
-    printf("Ultimo: %s\n",buffer[TAM_POSSIBILIDADES-1]);
-
     
-  
-  //MPI_Scatter(buffer, n_local, MPI_BYTE, buffer_local, n_local, MPI_BYTE, 0, comm);
-  //MPI_Bcast(buffer, TAM_POSSIBILIDADES + (TAM_POSSIBILIDADES % comm_sz), MPI_BYTE, 0, comm );
-
   n_local = TAM_POSSIBILIDADES / comm_sz; 
 
   inicio = my_rank * n_local;
   fim = inicio + n_local;
-/*
-    for (i = 0; i < n_local; i++){
-      //if(i%1000 == 0){
-        printf("Processo: %d, Buffer[%d]: %s\n",my_rank, i ,buffer[i] );
-      //}
-    }
-*/
-  MPI_Barrier(comm);
- 
+
+
   strcpy(senha, buffer[0]);
   i = inicio;
   while (i < fim) {
     testa_senha(argv[1], senha);
     i++;
-    if(i%10000 == 0){
-      printf("processo: %d, test: %s, i: %d\n",my_rank, buffer[i], i);
-    }
     strcpy(senha, buffer[i]);
   }
 
-
+  MPI_Barrier(comm);
+ 
   return 0;
 }
 
